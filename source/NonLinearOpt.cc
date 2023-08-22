@@ -264,36 +264,36 @@ namespace compressed_strip
 //    corner2(1) =  domain_dimensions[1]/2.0;
 //    GridGenerator::subdivided_hyper_rectangle (triangulation, grid_dimensions, corner1, corner2, true);
 
-    Triangulation<2,2> circle_triang;
-    Point<2> center2;
-    center2(0) = 0.0;
-    center2(1) = 0.0;
-    GridGenerator::hyper_shell(circle_triang, center2, domain_dimensions[0], domain_dimensions[1], grid_dimensions[0], false);
-    GridGenerator::extrude_triangulation(circle_triang, grid_dimensions[1], domain_dimensions[2], triangulation);
-
-    Tensor<1,DIM> direction;
-    direction[0] = 0.0;
-    direction[1] = 0.0;
-    direction[2] = 1.0;
-    Point<DIM> pnt;
-    pnt[0] = 0.0;
-    pnt[1] = 0.0;
-    pnt[2] = 0.0;
-    CylindricalManifold<DIM> cylinder_manifold(direction, pnt, 1.0e-5);
-    triangulation.set_all_manifold_ids(1);
-    triangulation.set_all_manifold_ids_on_boundary(0, 1);
-    triangulation.set_manifold(1, cylinder_manifold); // 4
-    for(unsigned int i = 0; i < grid_dimensions[2]; i++)
-    {
-      typename Triangulation<DIM>::active_cell_iterator cell =
-       triangulation.begin_active(), endc = triangulation.end();
-      for (; cell!=endc; ++cell)
-      {
-        cell->set_refine_flag(RefinementCase<DIM>::cut_xy);
-      }
-      triangulation.execute_coarsening_and_refinement();
-    }
+//    Triangulation<2,2> circle_triang;
+//    Point<2> center2;
+//    center2(0) = 0.0;
+//    center2(1) = 0.0;
+//    GridGenerator::hyper_shell(circle_triang, center2, domain_dimensions[0], domain_dimensions[1], grid_dimensions[0], false);
+//    GridGenerator::extrude_triangulation(circle_triang, grid_dimensions[1], domain_dimensions[2], triangulation);
 //
+//    Tensor<1,DIM> direction;
+//    direction[0] = 0.0;
+//    direction[1] = 0.0;
+//    direction[2] = 1.0;
+//    Point<DIM> pnt;
+//    pnt[0] = 0.0;
+//    pnt[1] = 0.0;
+//    pnt[2] = 0.0;
+//    CylindricalManifold<DIM> cylinder_manifold(direction, pnt, 1.0e-5);
+//    triangulation.set_all_manifold_ids(1);
+//    triangulation.set_all_manifold_ids_on_boundary(0, 1);
+//    triangulation.set_manifold(1, cylinder_manifold); // 4
+//    for(unsigned int i = 0; i < grid_dimensions[2]; i++)
+//    {
+//      typename Triangulation<DIM>::active_cell_iterator cell =
+//       triangulation.begin_active(), endc = triangulation.end();
+//      for (; cell!=endc; ++cell)
+//      {
+//        cell->set_refine_flag(RefinementCase<DIM>::cut_xy);
+//      }
+//      triangulation.execute_coarsening_and_refinement();
+//    }
+////
 //    TransfiniteInterpolationManifold<DIM> inner_manifold;
 //    inner_manifold.initialize(triangulation);
 //    triangulation.set_manifold (2, inner_manifold);
@@ -304,8 +304,8 @@ namespace compressed_strip
 
 
     // Make sure to renumber the boundaries
-    renumber_boundary_ids();
-
+//    renumber_boundary_ids();
+//
 
 //    double pert_val = domain_dimensions[2]/10.0;
 //    GridTools::transform(
@@ -317,40 +317,144 @@ namespace compressed_strip
 //      triangulation);
 
     //    double pert_val = domain_dimensions[2]/10.0;
-    GridTools::transform(
-        [](const Point<DIM> &in) {
-      return Point<DIM> ( 2.0*in[0],
-                          1.0*in[1],
-                        in[2]);
-    },
-    triangulation);
+//    GridTools::transform(
+//        [](const Point<DIM> &in) {
+//      return Point<DIM> ( 2.0*in[0],
+//                          1.0*in[1],
+//                        in[2]);
+//    },
+//    triangulation);
+//
+//
+//
+//    double dc = 2*M_PI*domain_dimensions[0]*1.3/(1.0*grid_dimensions[0]*pow(2.0, grid_dimensions[2]));
+//    double dz = domain_dimensions[2]/(1.0*(grid_dimensions[1] - 1.0));
+//    map_cell_to_rLine.resize(triangulation.n_active_cells(), -1);
+//    unsigned int count = 0;
+//    typename Triangulation<DIM>::active_cell_iterator cell =
+//     triangulation.begin_active(), endc = triangulation.end();
+//    for (; cell!=endc; ++cell)
+//    {
+//      Point<DIM> nextCen = cell->center();
+//
+//      if(fabs(nextCen(2) - domain_dimensions[2]/2.0) < dz && nextCen(2) > domain_dimensions[2]/2.0)
+//      {
+//        if(nextCen(0) > 0.0 && nextCen(1) > 0.0 && nextCen(1) < dc)
+//        {
+//          map_cell_to_rLine[cell->active_cell_index()] = count;
+//          radii.push_back(nextCen(0));
+//          count ++;
+//        }
+//      }
+//    }
+//
+//    sig_rr_r.resize(count);
+//    sig_tt_r.resize(count);
+//    sig_zz_r.resize(count);
 
 
-
-    double dc = 2*M_PI*domain_dimensions[0]*1.3/(1.0*grid_dimensions[0]*pow(2.0, grid_dimensions[2]));
-    double dz = domain_dimensions[2]/(1.0*(grid_dimensions[1] - 1.0));
-    map_cell_to_rLine.resize(triangulation.n_active_cells(), -1);
-    unsigned int count = 0;
-    typename Triangulation<DIM>::active_cell_iterator cell =
-     triangulation.begin_active(), endc = triangulation.end();
+    // make a cylinder like a retard: extrude a circle.
+    Triangulation<2,2> circle_triang;
+    Point<2> center;
+    center[0] = 0.0;
+    center[1] = 0.0;
+    GridGenerator::hyper_ball_balanced(circle_triang, center, domain_dimensions[0]);
+    DoFHandler<2> dof_handler_2(circle_triang);
+    typename DoFHandler<2>::active_cell_iterator
+    cell = dof_handler_2.begin_active(),
+    endc = dof_handler_2.end();
     for (; cell!=endc; ++cell)
     {
-      Point<DIM> nextCen = cell->center();
-
-      if(fabs(nextCen(2) - domain_dimensions[2]/2.0) < dz && nextCen(2) > domain_dimensions[2]/2.0)
+      for (unsigned int f = 0; f < GeometryInfo<2>::faces_per_cell; ++f)
       {
-        if(nextCen(0) > 0.0 && nextCen(1) > 0.0 && nextCen(1) < dc)
-        {
-          map_cell_to_rLine[cell->active_cell_index()] = count;
-          radii.push_back(nextCen(0));
-          count ++;
-        }
+        if(cell->face(f)->at_boundary())
+          cell->face(f)->set_all_boundary_ids(0);
       }
     }
 
-    sig_rr_r.resize(count);
-    sig_tt_r.resize(count);
-    sig_zz_r.resize(count);
+    GridGenerator::extrude_triangulation(circle_triang, grid_dimensions[1], domain_dimensions[1], triangulation);
+    typename DoFHandler<DIM>::active_cell_iterator
+    cell2 = dof_handler.begin_active(),
+    endc2 = dof_handler.end();
+    for (; cell2!=endc2; ++cell2)
+    {
+      for (unsigned int f = 0; f < GeometryInfo<DIM>::faces_per_cell; ++f)
+      {
+        const Point<DIM> face_center = cell2->face(f)->center();
+        if(cell2->face(f)->at_boundary())
+        {
+          if(fabs(face_center[2]) < 1.0e-6)
+          {
+            cell2->face(f)->set_all_boundary_ids(1);
+          }
+          else if(fabs(face_center[2] - domain_dimensions[1]) < 1.0e-6)
+          {
+            cell2->face(f)->set_all_boundary_ids(2);
+          }
+
+        }
+      }
+
+    }
+
+    cell2 = dof_handler.begin_active();
+    endc2 = dof_handler.end();
+    for (; cell2!=endc2; ++cell2)
+    {
+      for (unsigned int f = 0; f < GeometryInfo<DIM>::faces_per_cell; ++f)
+      {
+        const Point<DIM> face_center = cell2->face(f)->center();
+        if(cell2->face(f)->at_boundary())
+        {
+          if(face_center[2] > 1.0e-6 && face_center[2] < domain_dimensions[1] - 1.0e-6)
+          {
+            cell2->face(f)->set_all_boundary_ids(0);
+          }
+        }
+      }
+    }
+    // rotate so its in x direction...
+//    std::vector<bool> isDeformed(triangulation.n_vertices(), false);
+//    cell2 = dof_handler.begin_active(),
+//    endc2 = dof_handler.end();
+//    for (; cell2!=endc2; ++cell2)
+//    {
+//      for (unsigned int i=0; i<GeometryInfo<DIM>::vertices_per_cell; ++i)
+//      {
+//        unsigned int vertexIndex = cell2->vertex_index(i);
+//        if(isDeformed[vertexIndex] == false)
+//        {
+//          Point<DIM> &v = cell2->vertex(i);
+//          double holder = 0.0;
+//          holder = v[0];
+//          v[0] = v[2];
+//          v[2] = -holder;
+//          isDeformed[vertexIndex] = true;
+//        }
+//      }
+//    }
+
+    triangulation.set_all_manifold_ids(2);
+
+    triangulation.set_all_manifold_ids_on_boundary(0, 1);
+
+    Tensor<1,DIM> direction;
+    direction[0] = 0.0;
+    direction[1] = 0.0;
+    direction[2] = 1.0;
+    Point<DIM> pnt;
+    pnt[0] = 0.0;
+    pnt[1] = 0.0;
+    pnt[2] = 0.0;
+    CylindricalManifold<DIM> cylinder_manifold(direction, pnt, 1.0e-5);
+    triangulation.set_manifold(1, cylinder_manifold);
+
+    TransfiniteInterpolationManifold<DIM> inner_manifold;
+    inner_manifold.initialize(triangulation);
+    triangulation.set_manifold (2, inner_manifold);
+    triangulation.refine_global(grid_dimensions[0]);
+
+//    renumber_boundary_ids();
 
   }
 
@@ -560,21 +664,21 @@ namespace compressed_strip
     std::fill(Epsp.begin(), Epsp.end(), 0.0);
     output_results(0);
 
-    for(unsigned int i = 0; i < dof_handler.n_dofs(); i ++)
-    {
-      if(load_dofs[i])
-        velocity[i] = v_impactor;
-    }
+//    for(unsigned int i = 0; i < dof_handler.n_dofs(); i ++)
+//    {
+//      if(load_dofs[i])
+//        velocity[i] = v_impactor;
+//    }
 
     system_rhs = 0.0;
 
     assemble_mass_matrix();
 
-    inContact = true;
     for(unsigned int k = 1; k <= load_steps; k ++)
     {
       //       assemble_system_rhs();
       parallel_assemble_rhs(k);
+      indentor_contact_forces();
       apply_boundaries_to_rhs(&system_rhs, &homo_dofs);
       accel = 0.0;
 
@@ -588,25 +692,8 @@ namespace compressed_strip
 
       velocity.add(dT, accel);
       present_solution.add(dT, velocity);
-      if(k*dT > 20.0e-6)
-        inContact = false;
 
-      if(inContact)
-      {
-        if(impactor_update(k))
-        {
-          for(unsigned int i = 0; i < dof_handler.n_dofs(); i++)
-          {
-            if(load_dofs[i] == true)
-            {
-              present_solution[i] = u_impactor;
-              velocity[i] = v_impactor;
-            }
-          }
-        }
-        else
-          inContact = false;
-      }
+      impactor_update(0);
 
       if(k%100 == 0)
       {
@@ -623,30 +710,36 @@ namespace compressed_strip
 
   bool ElasticProblem::impactor_update(unsigned int k)
   {
-    double totalForce = ave_sig_zz*M_PI*(domain_dimensions[1]*domain_dimensions[1] - domain_dimensions[0]*domain_dimensions[0]);
-//    for(unsigned int i = 0; i < dof_handler.n_dofs(); i++)
+//    double totalForce = ave_sig_zz*M_PI*(domain_dimensions[1]*domain_dimensions[1] - domain_dimensions[0]*domain_dimensions[0]);
+////    for(unsigned int i = 0; i < dof_handler.n_dofs(); i++)
+////    {
+////      if(load_dofs[i] == true)
+////      {
+//////        std::cout << "BUNBUN " << system_rhs[i] << std::endl;
+////        totalForce = system_rhs[i];
+//////        std::cout << "COWCAT " << system_rhs[i] << std::endl;
+////      }
+////    }
+////    if (k%500 == 0)
+////      std::cout << "       Total Force : " << totalForce << "    Ave Sig_zz : " << ave_sig_zz  << std::endl;
+//
+//    if(totalForce > 0.0 || v_impactor < -1.0)
 //    {
-//      if(load_dofs[i] == true)
-//      {
-////        std::cout << "BUNBUN " << system_rhs[i] << std::endl;
-//        totalForce = system_rhs[i];
-////        std::cout << "COWCAT " << system_rhs[i] << std::endl;
-//      }
+//      a_impactor = totalForce/M_impactor;
+//      v_impactor += dT*a_impactor;
+//      u_impactor += dT*v_impactor;
+//      return true;
 //    }
-//    if (k%500 == 0)
-//      std::cout << "       Total Force : " << totalForce << "    Ave Sig_zz : " << ave_sig_zz  << std::endl;
+//    else
+//    {
+//      return false;
+//    }
 
-    if(totalForce > 0.0 || v_impactor < -1.0)
-    {
-      a_impactor = totalForce/M_impactor;
-      v_impactor += dT*a_impactor;
-      u_impactor += dT*v_impactor;
-      return true;
-    }
-    else
-    {
-      return false;
-    }
+//    v_impactor +=
+
+    z_impactor += v_impactor*dT;
+
+    return false;
   }
 
 
@@ -810,6 +903,78 @@ namespace compressed_strip
     }
 
     constraints.condense (system_rhs);
+
+  }
+
+  void ElasticProblem::indentor_contact_forces()
+  {
+    std::set< types::boundary_id > boundary_id_2;
+    boundary_id_2.insert(2);
+
+    std::vector<bool> all_components = {true, true, true};
+    ComponentMask all_mask(all_components);
+
+    std::vector<bool> top_dofs(dof_handler.n_dofs(), false);
+
+    DoFTools::extract_boundary_dofs(dof_handler,
+                                       all_mask,
+                                       top_dofs,
+                                       boundary_id_2);
+
+    std::vector<Point<DIM>> support_points(dof_handler.n_dofs());
+    MappingQ1<DIM> mapping;
+    DoFTools::map_dofs_to_support_points(mapping, dof_handler, support_points);
+
+
+    Point<DIM> node_pos;
+
+    Point<DIM> indentor_pos;
+    indentor_pos(0) = 0.0;
+    indentor_pos(1) = 0.0;
+    indentor_pos(2) = z_impactor;
+
+    Point<DIM> diff;
+
+    for(unsigned int i = 0; i < dof_handler.n_dofs(); i++)
+    {
+      if(i%3 != 0 || top_dofs[i] == false)
+        continue;
+
+      node_pos = support_points[i];
+
+      // check if this one is in contact
+      double ux = present_solution[i];
+      double uy = present_solution[i+1];
+      double uz = present_solution[i+2];
+
+      node_pos(0) += ux;
+      node_pos(1) += uy;
+      node_pos(2) += uz;
+
+      if(node_pos.distance(indentor_pos) < r_impactor)
+      {
+        // In contact!!!
+        double delta = r_impactor - node_pos.distance(indentor_pos);
+
+        double force = penal_stiff*delta;
+
+        diff = node_pos;
+        diff -= indentor_pos;
+
+        double norm_diff = diff.norm();
+
+
+        system_rhs[i] += force*diff(0)/norm_diff;
+        system_rhs[i+1] += force*diff(1)/norm_diff;
+        system_rhs[i+2] += force*diff(2)/norm_diff;
+
+
+      }
+
+
+
+
+    }
 
   }
 
@@ -997,23 +1162,23 @@ namespace compressed_strip
 //    data_out_output_eulerian_u1.build_patches(q_mapping, 1);
 //    data_out_output_eulerian_u1.write_vtu (output_eulerian_u1);
 
-    std::string filenameStress(output_directory);
-    filenameStress += "/stresses";
-
-    // see if the directory exists...
-    struct stat st2;
-    if (stat(filenameStress.c_str(), &st2) == -1)
-      mkdir(filenameStress.c_str(), 0700);
-
-    filenameStress += "/stresses-";
-    filenameStress += std::to_string(cycle);
-    filenameStress += ".dat";
-
-    std::ofstream out(filenameStress.c_str());
-    for(unsigned int i = 0; i < radii.size(); i ++)
-      out << std::setprecision(14) << radii[i] << " " << sig_rr_r[i] << " " << sig_tt_r[i] << " " << sig_zz_r[i] << std::endl;
-
-    out.close();
+//    std::string filenameStress(output_directory);
+//    filenameStress += "/stresses";
+//
+//    // see if the directory exists...
+//    struct stat st2;
+//    if (stat(filenameStress.c_str(), &st2) == -1)
+//      mkdir(filenameStress.c_str(), 0700);
+//
+//    filenameStress += "/stresses-";
+//    filenameStress += std::to_string(cycle);
+//    filenameStress += ".dat";
+//
+//    std::ofstream out(filenameStress.c_str());
+//    for(unsigned int i = 0; i < radii.size(); i ++)
+//      out << std::setprecision(14) << radii[i] << " " << sig_rr_r[i] << " " << sig_tt_r[i] << " " << sig_zz_r[i] << std::endl;
+//
+//    out.close();
 
   }
 
@@ -1284,7 +1449,7 @@ namespace compressed_strip
           {
             cell->face(f)->set_all_boundary_ids (1);
           }
-          else if(fabs(face_center[2] - domain_dimensions[2]) < 1.0e-7)
+          else if(fabs(face_center[2] - domain_dimensions[1]) < 1.0e-7)
           {
             cell->face(f)->set_all_boundary_ids (2);
           }
@@ -1319,8 +1484,8 @@ namespace compressed_strip
     for (unsigned int i=0; i<copy_data.local_dof_indices.size(); ++i)
       system_rhs[copy_data.local_dof_indices[i]] += copy_data.cell_rhs[i];
 
-    if(inContact)
-      ave_sig_zz += copy_data.cell_rhs[copy_data.local_dof_indices.size()];
+//    if(inContact)
+//      ave_sig_zz += copy_data.cell_rhs[copy_data.local_dof_indices.size()];
   }
 
 
@@ -1356,14 +1521,14 @@ namespace compressed_strip
     ave_epsp_eff[cell_index] = 0.0;
     ave_pressure[cell_index] = 0.0;
 
-    if(map_cell_to_rLine[cell_index] != -1)
-    {
-      sig_rr_r[map_cell_to_rLine[cell_index]] = 0.0;
-      sig_tt_r[map_cell_to_rLine[cell_index]] = 0.0;
-      sig_zz_r[map_cell_to_rLine[cell_index]] = 0.0;
-    }
+//    if(map_cell_to_rLine[cell_index] != -1)
+//    {
+//      sig_rr_r[map_cell_to_rLine[cell_index]] = 0.0;
+//      sig_tt_r[map_cell_to_rLine[cell_index]] = 0.0;
+//      sig_zz_r[map_cell_to_rLine[cell_index]] = 0.0;
+//    }
 
-    double sig_zz_contrb = 0.0;
+//    double sig_zz_contrb = 0.0;
     for (unsigned int q_point=0; q_point<n_q_points; ++q_point)
     {
       unsigned int indx = cell_index*n_q_points + q_point;
@@ -1379,17 +1544,17 @@ namespace compressed_strip
       ave_pressure[cell_index] += K*trace(Eps)*scratch.fe_values.JxW(q_point);
 
 
-      if(inContact && top_elms[cell_index] == 1)
-        sig_zz_contrb -= dW_dE[2][2]*scratch.fe_values.JxW(q_point);
+//      if(inContact && top_elms[cell_index] == 1)
+//        sig_zz_contrb -= dW_dE[2][2]*scratch.fe_values.JxW(q_point);
 
-      if(map_cell_to_rLine[cell_index] != -1)
-      {
-        transform_stress(dW_dE, q_p[q_point], rot_stress);
-
-        sig_rr_r[map_cell_to_rLine[cell_index]] += rot_stress[0][0]*scratch.fe_values.JxW(q_point);
-        sig_tt_r[map_cell_to_rLine[cell_index]] += rot_stress[1][1]*scratch.fe_values.JxW(q_point);
-        sig_zz_r[map_cell_to_rLine[cell_index]] += rot_stress[2][2]*scratch.fe_values.JxW(q_point);
-      }
+//      if(map_cell_to_rLine[cell_index] != -1)
+//      {
+//        transform_stress(dW_dE, q_p[q_point], rot_stress);
+//
+//        sig_rr_r[map_cell_to_rLine[cell_index]] += rot_stress[0][0]*scratch.fe_values.JxW(q_point);
+//        sig_tt_r[map_cell_to_rLine[cell_index]] += rot_stress[1][1]*scratch.fe_values.JxW(q_point);
+//        sig_zz_r[map_cell_to_rLine[cell_index]] += rot_stress[2][2]*scratch.fe_values.JxW(q_point);
+//      }
 
       for (unsigned int n = 0; n < dofs_per_cell; ++n)
       {
@@ -1404,18 +1569,18 @@ namespace compressed_strip
 
     }
 
-    if(map_cell_to_rLine[cell_index] != -1)
-    {
-      sig_rr_r[map_cell_to_rLine[cell_index]] *= 1.0/cell->measure();
-      sig_tt_r[map_cell_to_rLine[cell_index]] *= 1.0/cell->measure();
-      sig_zz_r[map_cell_to_rLine[cell_index]] *= 1.0/cell->measure();
-    }
+//    if(map_cell_to_rLine[cell_index] != -1)
+//    {
+//      sig_rr_r[map_cell_to_rLine[cell_index]] *= 1.0/cell->measure();
+//      sig_tt_r[map_cell_to_rLine[cell_index]] *= 1.0/cell->measure();
+//      sig_zz_r[map_cell_to_rLine[cell_index]] *= 1.0/cell->measure();
+//    }
 
 
     ave_epsp_eff[cell_index] *= 1.0/cell->measure();
     ave_pressure[cell_index] *= 1.0/cell->measure();
 
-    cell_rhs(dofs_per_cell) = sig_zz_contrb;
+//    cell_rhs(dofs_per_cell) = sig_zz_contrb;
     copy_data.cell_rhs = cell_rhs;
 
     copy_data.local_dof_indices.resize(dofs_per_cell);
@@ -1427,8 +1592,6 @@ namespace compressed_strip
   {
     system_rhs = 0.0;
 
-    if(inContact)
-      ave_sig_zz = 0.0;
 
     WorkStream::run(dof_handler.begin_active(),
                     dof_handler.end(),
@@ -1440,8 +1603,6 @@ namespace compressed_strip
 
 //    constraints.condense (system_rhs);
 
-    if(inContact)
-      ave_sig_zz *= 1.0/TopVol;
   }
 
 }

@@ -239,6 +239,7 @@ namespace compressed_strip
     void assemble_mass_matrix();
     void assemble_system_matrix();
     void assemble_system_rhs();
+    void indentor_contact_forces();
 
 
     void apply_boundaries_and_constraints_system_matrix(SparseMatrix<double> *mat,
@@ -361,6 +362,9 @@ namespace compressed_strip
     double u_impactor = 0.0;
     double v_impactor = -0.1;
     double a_impactor = 0.0;
+    double z_impactor = 0.855e-3;
+    double r_impactor = 0.35e-3;
+    double penal_stiff = 1.0e7;
 
 
     bool inContact = true;
