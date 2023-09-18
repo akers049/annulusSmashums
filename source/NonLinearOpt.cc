@@ -489,6 +489,7 @@ namespace compressed_strip
     present_solution.reinit (dof_handler.n_dofs());
     velocity.reinit (dof_handler.n_dofs());
     accel.reinit (dof_handler.n_dofs());
+    prev_accel.reinit(dof_handler.n_dofs());
 
     mass_vector.reinit(dof_handler.n_dofs());
 
@@ -654,11 +655,11 @@ namespace compressed_strip
     present_solution = 0.0;
     velocity = 0.0;
     accel = 0.0;
+    prev_accel = 0.0;
 
 
     std::FILE *fptr;
     fptr = std::fopen("load_info.dat", "w");
-    std::fclose(fptr);
 
     std::fill(Epsp_eff.begin(), Epsp_eff.end(), 0.0);
     std::fill(Epsp.begin(), Epsp.end(), 0.0);
@@ -674,12 +675,30 @@ namespace compressed_strip
 
     assemble_mass_matrix();
 
+    fprintf(fptr, "%lg %lg", 0.0, total_force);
+
     for(unsigned int k = 1; k <= load_steps; k ++)
     {
+
+      impactor_update(0);
+
+      present_solution.add(dT, velocity);
+      present_solution.add(0.5*dT*dT, accel);
+
+      velocity.add(0.5*dT, accel);
+//      velocity.add(0.5*dT, prev_accel);
+
+      indentor_contact_forces();
+
+      fprintf(fptr, "%lg %lg\n", k*dT, total_force);
+
+
       //       assemble_system_rhs();
       parallel_assemble_rhs(k);
-      indentor_contact_forces();
       apply_boundaries_to_rhs(&system_rhs, &homo_dofs);
+//      std::cout << system_rhs.l2_norm() << std::endl;
+
+      prev_accel = accel;
       accel = 0.0;
 
       for(unsigned int i = 0; i < dof_handler.n_dofs(); i ++)
@@ -690,10 +709,11 @@ namespace compressed_strip
           accel[i] = (1.0/mass_vector[i])*system_rhs[i];
       }
 
-      velocity.add(dT, accel);
-      present_solution.add(dT, velocity);
 
-      impactor_update(0);
+
+
+
+
 
       if(k%100 == 0)
       {
@@ -705,6 +725,9 @@ namespace compressed_strip
       }
 
     }
+
+    std::fclose(fptr);
+
 
   }
 
@@ -935,6 +958,8 @@ namespace compressed_strip
 
     Point<DIM> diff;
 
+    total_force = 0.0;
+
     for(unsigned int i = 0; i < dof_handler.n_dofs(); i++)
     {
       if(i%3 != 0 || top_dofs[i] == false)
@@ -956,18 +981,30 @@ namespace compressed_strip
         // In contact!!!
         double delta = r_impactor - node_pos.distance(indentor_pos);
 
-        double force = penal_stiff*delta;
+//        double force = penal_stiff*delta;
+
+        double force = 2.0*delta*mass_vector[i]/(dT*dT);
 
         diff = node_pos;
         diff -= indentor_pos;
 
         double norm_diff = diff.norm();
 
+//        system_rhs[i] += force*diff(0)/norm_diff;
+//        system_rhs[i+1] += force*diff(1)/norm_diff;
+//        system_rhs[i+2] += force*diff(2)/norm_diff;
 
-        system_rhs[i] += force*diff(0)/norm_diff;
-        system_rhs[i+1] += force*diff(1)/norm_diff;
-        system_rhs[i+2] += force*diff(2)/norm_diff;
 
+        present_solution[i] += (0.5*dT*dT/mass_vector[i])*force*diff(0)/norm_diff;
+        present_solution[i+1] += (0.5*dT*dT/mass_vector[i])*force*diff(1)/norm_diff;
+        present_solution[i+2] += (0.5*dT*dT/mass_vector[i])*force*diff(2)/norm_diff;
+
+
+        velocity[i] += (dT/mass_vector[i])*force*diff(0)/norm_diff;
+        velocity[i+1] += (dT/mass_vector[i])*force*diff(1)/norm_diff;
+        velocity[i+2] += (dT/mass_vector[i])*force*diff(2)/norm_diff;
+
+        total_force -= force*diff(2)/norm_diff;
 
       }
 

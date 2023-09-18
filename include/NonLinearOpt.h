@@ -281,6 +281,7 @@ namespace compressed_strip
     Vector<double>       present_solution;
     Vector<double>       velocity;
     Vector<double>       accel;
+    Vector<double>       prev_accel;
 
 
     Vector<double>       volumes;
@@ -343,6 +344,7 @@ namespace compressed_strip
     double load_val = 0.01;
     unsigned int load_steps = 10;
 
+    double total_force = 0.0;
 
 
     double dT = 0.01;

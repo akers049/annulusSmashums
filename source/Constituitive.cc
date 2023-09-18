@@ -22,6 +22,9 @@ using namespace dealii;
     lambda = next_lambda;
     mu = next_mu;
 
+//    std::cout << mu << " " << lambda << " " << yield << " " << eps_p_0 << " " << eps_p_0_dot << " " << m << " " << n  << std::endl;
+
+
     for (unsigned int i = 0; i < DIM; i ++)
        for (unsigned int j = 0; j < DIM; j ++)
          for (unsigned int k = 0; k < DIM; k ++)

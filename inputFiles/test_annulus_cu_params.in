@@ -1,7 +1,7 @@
 # TEST INPUT FILE
 
 # output directory
-TEST_INDENTOR_CU_00
+TEST_INDENTOR_CU_NEW_00
 
 # grid dimensions
 #12 9 2
@@ -18,7 +18,7 @@ TEST_INDENTOR_CU_00
 2 2 2
 
 # final time, and steps
-2.5e-5 8000
+5e-5 8000
 
 # plasticity parameters m, n, eps_p0, eps_dot_p0, yield strain
 2.0 3.2258 0.02245 5.0e5 0.001935
